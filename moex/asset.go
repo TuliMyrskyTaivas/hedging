@@ -79,6 +79,12 @@ func GetEngineMarketBoard(asset string) (string, string, string) {
 		log.Fatal("First board is not primary!")
 	}
 
-	slog.Debug("For %s on MOEX engine is %s, market is %s, primary board is %s", asset, info.Engine, info.Market, info.Boardid)
+	slog.Debug(fmt.Sprintf(
+		"For %s on MOEX engine is %s, market is %s, primary board is %s",
+		asset,
+		info.Engine,
+		info.Market,
+		info.Boardid,
+	))
 	return info.Engine, info.Market, info.Boardid
 }

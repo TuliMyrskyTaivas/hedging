@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log"
 	"log/slog"
 	"os"
 	"runtime/debug"
@@ -46,11 +47,13 @@ func setupLogger(verbose bool) {
 func main() {
 	var verbose bool
 	var help bool
+	var depth int
 	var futureTicker string
 	var asset string
 
 	flag.StringVar(&asset, "a", "", "base asset")
 	flag.StringVar(&futureTicker, "f", "", "future ticker")
+	flag.IntVar(&depth, "d", 365, "history request depth")
 	flag.BoolVar(&verbose, "v", false, "verbose logging")
 	flag.BoolVar(&help, "h", false, "show help")
 	flag.Parse()
@@ -58,6 +61,10 @@ func main() {
 	if help {
 		flag.PrintDefaults()
 		os.Exit(0)
+	}
+
+	if len(futureTicker) == 0 {
+		log.Fatal("Future ticker must be specified. Run with -h for the help")
 	}
 
 	setupLogger(verbose)
@@ -74,7 +81,7 @@ func main() {
 
 	// Query range: last year
 	historyTo := time.Now()
-	historyFrom := historyTo.AddDate(-1, 0, 0)
+	historyFrom := historyTo.AddDate(0, -depth, 0)
 
 	// Adjust range on availability of data on MOEX
 	futureHistoryFrom, _ := moex.GetHistoryRange("futures", "forts", "RFUD", futureTicker)
@@ -98,4 +105,8 @@ func main() {
 
 	correlation := stat.Correlation(futureChanges, assetChanges, nil)
 	fmt.Printf("Correlation between price changes of %s and %s: %f\n", futureTicker, asset, correlation)
+
+	optimalHedge := (assetStdDev / futureStdDev) * correlation
+	hedgingEfficiency := correlation * correlation
+	fmt.Printf("Optimal hedging coefficient is %f, hedging efficiency is %f\n", optimalHedge, hedgingEfficiency)
 }
