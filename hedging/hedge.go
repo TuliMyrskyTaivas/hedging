@@ -83,10 +83,10 @@ func (calculator *hedgeCalculator) Execute(command Command) error {
 // ///////////////////////////////////////////////////////////////////
 // Extract array of price changes from MoexHistory
 // ///////////////////////////////////////////////////////////////////
-func extractPriceChanges(history moex.History) []float64 {
+func extractPriceChanges(history []moex.HistoryItem) []float64 {
 	var changes []float64
 	var prevClose float64 = 0
-	for _, item := range history[1].History {
+	for _, item := range history {
 		changes = append(changes, item.Close-prevClose)
 		prevClose = item.Close
 	}
