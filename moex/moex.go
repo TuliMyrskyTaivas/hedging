@@ -11,7 +11,7 @@ import (
 )
 
 // ///////////////////////////////////////////////////////////////////
-func parseMoexTime(moexTime string) time.Time {
+func ParseTime(moexTime string) time.Time {
 	const timeFormat string = "2006-01-02"
 	time, err := time.Parse(timeFormat, moexTime)
 	if err != nil {
@@ -31,7 +31,7 @@ func parseJSON[T any](s []byte) (T, error) {
 }
 
 // ///////////////////////////////////////////////////////////////////
-func Query[T any](url string) (T, error) {
+func query[T any](url string) (T, error) {
 	var result T
 
 	slog.Debug(fmt.Sprintf("Query MOEX: %s", url))

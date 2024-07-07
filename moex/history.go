@@ -46,12 +46,12 @@ type History []struct {
 // ///////////////////////////////////////////////////////////////////
 // Query MOEX on the dates for which history is available for the specified asset
 // ///////////////////////////////////////////////////////////////////
-func GetHistoryRange(engine string, market string, board string, asset string) (time.Time, time.Time) {
+func GetHistoryRange(asset Asset) (time.Time, time.Time) {
 	slog.Debug(fmt.Sprintf("Quering MOEX on history range for %s", asset))
 	url := fmt.Sprintf("https://iss.moex.com/iss/history/engines/%s/markets/%s/boards/%s/securities/%s/dates.json?iss.json=extended&iss.meta=off&marketprice_board=1",
-		engine, market, board, asset)
+		asset.Engine, asset.Market, asset.Boardid, asset.Secid)
 
-	historyRange, err := Query[HistoryRange](url)
+	historyRange, err := query[HistoryRange](url)
 	if err != nil {
 		log.Fatal(fmt.Errorf("failed to query MOEX: %w", err))
 	}
@@ -59,28 +59,28 @@ func GetHistoryRange(engine string, market string, board string, asset string) (
 	from := historyRange[1].Dates[0].From
 	till := historyRange[1].Dates[0].Till
 
-	slog.Debug(fmt.Sprintf("MOEX history for %s is available from %s till %s", asset, from, till))
-	return parseMoexTime(from), parseMoexTime(till)
+	slog.Debug(fmt.Sprintf("MOEX history for %s is available from %s till %s", asset.Secid, from, till))
+	return ParseTime(from), ParseTime(till)
 }
 
 // ///////////////////////////////////////////////////////////////////
 // Get MOEX asset history
 // ///////////////////////////////////////////////////////////////////
-func GetHistory(engine string, market string, board string, asset string, from time.Time, to time.Time) History {
+func (asset *Asset) GetHistory(from time.Time, to time.Time) (History, error) {
 	const timeFormat string = "2006-01-02"
 	timeFrom := from.Format(timeFormat)
 	timeTo := to.Format(timeFormat)
 
-	slog.Debug(fmt.Sprintf("Quering MOEX history on %s from %s to %s", asset, timeFrom, timeTo))
+	slog.Debug(fmt.Sprintf("Quering MOEX history on %s from %s to %s", asset.Secid, timeFrom, timeTo))
 
 	url := fmt.Sprintf("https://iss.moex.com/iss/history/engines/%s/markets/%s/boards/%s/securities/%s.json?iss.json=extended&iss.meta=off&iss.only=history&from=%s&till=%s&marketprice_board=1",
-		engine, market, board, asset, timeFrom, timeTo)
+		asset.Engine, asset.Market, asset.Boardid, asset.Secid, timeFrom, timeTo)
 
-	history, err := Query[History](url)
+	history, err := query[History](url)
 	if err != nil {
-		log.Fatal(fmt.Errorf("failed to query MOEX: %w", err))
+		return nil, err
 	}
 
-	slog.Debug(fmt.Sprintf("MOEX history of %s contains %d items", asset, len(history[1].History)))
-	return history
+	slog.Debug(fmt.Sprintf("MOEX history of %s contains %d items", asset.Secid, len(history[1].History)))
+	return history, nil
 }
