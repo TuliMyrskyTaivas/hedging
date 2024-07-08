@@ -27,7 +27,7 @@ type HistoryItem struct {
 	Close             float64 `json:"CLOSE"`
 	Openpositionvalue float64 `json:"OPENPOSITIONVALUE"`
 	Value             float64 `json:"VALUE"`
-	Volume            int     `json:"VOLUME"`
+	Volume            float64 `json:"VOLUME"`
 	Openposition      int     `json:"OPENPOSITION"`
 	Settleprice       float64 `json:"SETTLEPRICE"`
 	Swaprate          float64 `json:"SWAPRATE"`

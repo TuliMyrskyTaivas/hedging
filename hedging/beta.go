@@ -29,8 +29,6 @@ func (calculator *betaCalculator) Execute(command Command) error {
 	if err != nil {
 		return err
 	}
-
-	// Use future's underlying asset if base asset is not explicitly defined
 	asset, err := moex.GetAsset(command.Asset)
 	if err != nil {
 		return err
@@ -59,8 +57,9 @@ func (calculator *betaCalculator) Execute(command Command) error {
 		return err
 	}
 
-	indexProfits := getProfits(indexHistory)
-	assetProfits := getProfits(assetHistory)
+	shortestLength := min(len(indexHistory), len(assetHistory))
+	indexProfits := getProfits(indexHistory, shortestLength)
+	assetProfits := getProfits(assetHistory, shortestLength)
 	indexStdDev := stat.StdDev(indexProfits, nil)
 	beta := stat.Covariance(indexProfits, assetProfits, nil) / (indexStdDev * indexStdDev)
 
@@ -68,9 +67,12 @@ func (calculator *betaCalculator) Execute(command Command) error {
 	return nil
 }
 
-func getProfits(history []moex.HistoryItem) []float64 {
+func getProfits(history []moex.HistoryItem, length int) []float64 {
 	var profits []float64
-	for _, item := range history {
+	for idx, item := range history {
+		if idx == length {
+			break
+		}
 		profits = append(profits, (item.Close-item.Open)/item.Open)
 	}
 	return profits
