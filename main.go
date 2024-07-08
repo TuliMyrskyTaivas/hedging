@@ -11,6 +11,11 @@ import (
 	"github.com/TuliMyrskyTaivas/hedging/hedging"
 )
 
+var (
+	sha1ver   string // sha1 revision used to build the program
+	buildTime string // when the executable was built
+)
+
 // ///////////////////////////////////////////////////////////////////
 // Setup a global logger
 // ///////////////////////////////////////////////////////////////////
@@ -55,7 +60,7 @@ func main() {
 	setupLogger(verbose)
 
 	buildInfo, _ := debug.ReadBuildInfo()
-	slog.Debug(fmt.Sprintf("Built by %s", buildInfo.GoVersion))
+	slog.Debug(fmt.Sprintf("Built by %s at %s (SHA1=%s)", buildInfo.GoVersion, buildTime, sha1ver))
 
 	executor, error := hedging.CreateCommand(flag.Arg(0))
 	if error != nil {
