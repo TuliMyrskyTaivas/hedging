@@ -2,6 +2,7 @@ package hedging
 
 import (
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/TuliMyrskyTaivas/hedging/moex"
@@ -60,6 +61,12 @@ func (calculator *betaCalculator) Execute(command Command) error {
 	shortestLength := min(len(indexHistory), len(assetHistory))
 	indexProfits := getProfits(indexHistory, shortestLength)
 	assetProfits := getProfits(assetHistory, shortestLength)
+
+	if profitsCalculatedWrong(indexProfits) {
+		slog.Debug("seems that MOEX reports same open and close prices for the index, recalculating profits...")
+		indexProfits = getOvernightProfits(indexHistory, shortestLength)
+	}
+
 	indexStdDev := stat.StdDev(indexProfits, nil)
 	beta := stat.Covariance(indexProfits, assetProfits, nil) / (indexStdDev * indexStdDev)
 
@@ -73,7 +80,37 @@ func getProfits(history []moex.HistoryItem, length int) []float64 {
 		if idx == length {
 			break
 		}
-		profits = append(profits, (item.Close-item.Open)/item.Open)
+		if item.Open == 0 {
+			profits = append(profits, 0)
+		} else {
+			profits = append(profits, (item.Close-item.Open)/item.Open)
+		}
 	}
 	return profits
+}
+
+func getOvernightProfits(history []moex.HistoryItem, length int) []float64 {
+	var profits []float64
+	var prevClose float64 = 0
+	for idx, item := range history {
+		if idx == length {
+			break
+		}
+		if prevClose == 0 {
+			profits = append(profits, 0)
+		} else {
+			profits = append(profits, (item.Close-prevClose)/prevClose)
+		}
+		prevClose = item.Close
+	}
+	return profits
+}
+
+func profitsCalculatedWrong(profits []float64) bool {
+	var sum float64
+	for _, item := range profits {
+		sum += item
+	}
+
+	return sum == 0
 }
