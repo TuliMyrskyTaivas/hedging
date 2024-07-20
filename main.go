@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"os"
 	"runtime/debug"
+	"strings"
 
 	"github.com/TuliMyrskyTaivas/hedging/hedging"
 )
@@ -40,8 +41,8 @@ func main() {
 	var command hedging.Command
 
 	flag.StringVar(&command.Asset, "a", "", "base asset")
-	flag.StringVar(&command.Hedge, "e", "", "hedge asset")
-	flag.IntVar(&command.HistoryDepth, "d", 365, "history request depth")
+	flag.StringVar(&command.Hedge, "i", "", "hedge/index asset")
+	flag.IntVar(&command.HistoryDepth, "d", 12, "history request depth")
 	flag.BoolVar(&verbose, "v", false, "verbose logging")
 	flag.BoolVar(&help, "h", false, "show help")
 	flag.Parse()
@@ -62,6 +63,8 @@ func main() {
 	buildInfo, _ := debug.ReadBuildInfo()
 	slog.Debug(fmt.Sprintf("Built by %s at %s (SHA1=%s)", buildInfo.GoVersion, buildTime, sha1ver))
 
+	command.Asset = strings.ToUpper(command.Asset)
+	command.Hedge = strings.ToUpper(command.Hedge)
 	executor, error := hedging.CreateCommand(flag.Arg(0))
 	if error != nil {
 		log.Fatal(error)
