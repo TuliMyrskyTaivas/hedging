@@ -70,7 +70,12 @@ func (calculator *betaCalculator) Execute(command Command) error {
 	indexStdDev := stat.StdDev(indexProfits, nil)
 	beta := stat.Covariance(indexProfits, assetProfits, nil) / (indexStdDev * indexStdDev)
 
-	fmt.Printf("Beta coefficient for %s on %s is %f\n", asset.Secid, index.Secid, beta)
+	printer, err := GetPrinter()
+	if err != nil {
+		return err
+	}
+
+	printer.Printf("Beta coefficient for %s on %s is %f\n", asset.Secid, index.Secid, beta)
 	return nil
 }
 
