@@ -64,20 +64,17 @@ func (calculator *betaCalculator) Execute(command Command) error {
 				assets = append(assets, asset)
 			}
 		}
-		if len(assets) == len(assetNames) {
+		if len(assets) == len(assetNames) && index.Secid != "" {
 			break
 		}
 	}
 
-	printer, err := GetPrinter()
-	if err != nil {
-		return err
-	}
-
+	// Calculate beta on assets
 	betaResults := make(chan betaReport, len(assetNames))
 	for _, asset := range assets {
 		go calcBeta(asset, index, command.HistoryDepth, betaResults, errors)
 	}
+	// Read the results of calculation or stop on first error
 	var betas []betaReport
 	for {
 		select {
@@ -92,6 +89,11 @@ func (calculator *betaCalculator) Execute(command Command) error {
 		}
 	}
 
+	// Print the results
+	printer, err := GetPrinter()
+	if err != nil {
+		return err
+	}
 	for _, beta := range betas {
 		printer.Printf("Beta coefficient for last %d month %s on %s is %f\n", command.HistoryDepth, beta.asset, index.Secid, beta.beta)
 	}
