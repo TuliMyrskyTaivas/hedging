@@ -8,10 +8,16 @@ import (
 	"gonum.org/v1/gonum/stat"
 )
 
-type hedgeCalculator struct{}
+type hedgeCalculator struct {
+	cache *Cache
+}
 
-func newHedgeCalculator() Executor {
-	return &hedgeCalculator{}
+func newHedgeCalculator() (Executor, error) {
+	cache, err := NewCache()
+	if err != nil {
+		return nil, err
+	}
+	return &hedgeCalculator{cache: cache}, nil
 }
 
 func (calculator *hedgeCalculator) Execute(command Command) error {

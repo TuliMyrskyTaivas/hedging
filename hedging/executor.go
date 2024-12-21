@@ -14,10 +14,10 @@ type Executor interface {
 
 func CreateCommand(command string) (Executor, error) {
 	if command == "beta" {
-		return newBetaCalculator(), nil
+		return newBetaCalculator()
 	}
 	if command == "hedge" {
-		return newHedgeCalculator(), nil
+		return newHedgeCalculator()
 	}
 	return nil, fmt.Errorf("wrong command %s, run with -h for the help", command)
 }

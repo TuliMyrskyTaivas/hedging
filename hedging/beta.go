@@ -10,13 +10,19 @@ import (
 	"gonum.org/v1/gonum/stat"
 )
 
-type betaCalculator struct{}
+type betaCalculator struct {
+	cache *Cache
+}
 
 // ////////////////////////////////////////////////////////
 // Constructor
 // ////////////////////////////////////////////////////////
-func newBetaCalculator() Executor {
-	return &betaCalculator{}
+func newBetaCalculator() (Executor, error) {
+	cache, err := NewCache()
+	if err != nil {
+		return nil, err
+	}
+	return &betaCalculator{cache: cache}, nil
 }
 
 type betaReport struct {
@@ -139,13 +145,22 @@ func calcBeta(asset moex.Asset, index moex.Asset, depthMonth int, result chan be
 		return
 	}
 
-	shortestLength := min(len(indexHistory), len(assetHistory))
-	indexProfits := getProfits(indexHistory, shortestLength)
-	assetProfits := getProfits(assetHistory, shortestLength)
+	// Normalize histories: leave only items with the same date
+	if len(indexHistory) > len(assetHistory) {
+		indexHistory = filterHistory(assetHistory, indexHistory)
+	} else if len(assetHistory) > len(indexHistory) {
+		assetHistory = filterHistory(indexHistory, assetHistory)
+	}
+
+	slog.Debug(fmt.Sprintf("history of %s contains %d items, history of %s contains %d items",
+		asset.Secid, len(assetHistory), index.Secid, len(indexHistory)))
+
+	indexProfits := getProfits(indexHistory)
+	assetProfits := getProfits(assetHistory)
 
 	if profitsCalculatedWrong(indexProfits) {
 		slog.Debug("seems that MOEX reports same open and close prices for the index, recalculating profits...")
-		indexProfits = getOvernightProfits(indexHistory, shortestLength)
+		indexProfits = getOvernightProfits(indexHistory)
 	}
 
 	indexStdDev := stat.StdDev(indexProfits, nil)
@@ -156,12 +171,37 @@ func calcBeta(asset moex.Asset, index moex.Asset, depthMonth int, result chan be
 // ////////////////////////////////////////////////////////
 // Get profits as difference of close and open prices
 // ////////////////////////////////////////////////////////
-func getProfits(history []moex.HistoryItem, length int) []float64 {
-	var profits []float64
-	for idx, item := range history {
-		if idx == length {
-			break
+func filterHistory(baseLine []moex.HistoryItem, input []moex.HistoryItem) []moex.HistoryItem {
+	output := input[:0]
+	for i, j := 0, 0; i < len(baseLine) && j < len(input); {
+		baseDate := moex.ParseTime(baseLine[i].Tradedate)
+		inputDate := moex.ParseTime(input[j].Tradedate)
+		if baseDate == inputDate {
+			output = append(output, input[i])
+			i++
+			j++
+		} else if baseDate.Before(inputDate) {
+			i++
+		} else {
+			j++
 		}
+	}
+
+	// Validate
+	for idx, item := range output {
+		if baseLine[idx].Tradedate != item.Tradedate {
+			slog.Error(fmt.Sprintf("Dates not equal at idx %d: %s != %s", idx, baseLine[idx].Tradedate, item.Tradedate))
+		}
+	}
+	return output
+}
+
+// ////////////////////////////////////////////////////////
+// Get profits as difference of close and open prices
+// ////////////////////////////////////////////////////////
+func getProfits(history []moex.HistoryItem) []float64 {
+	var profits []float64
+	for _, item := range history {
 		if item.Open == 0 {
 			profits = append(profits, 0)
 		} else {
@@ -174,13 +214,10 @@ func getProfits(history []moex.HistoryItem, length int) []float64 {
 // ////////////////////////////////////////////////////////
 // Get profits as difference of close prices overnight
 // ////////////////////////////////////////////////////////
-func getOvernightProfits(history []moex.HistoryItem, length int) []float64 {
+func getOvernightProfits(history []moex.HistoryItem) []float64 {
 	var profits []float64
 	var prevClose float64 = 0
-	for idx, item := range history {
-		if idx == length {
-			break
-		}
+	for _, item := range history {
 		if prevClose == 0 {
 			profits = append(profits, 0)
 		} else {
