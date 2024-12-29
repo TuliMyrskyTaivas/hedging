@@ -22,6 +22,11 @@ func newBetaCalculator() (Executor, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	err = cache.PrintStats()
+	if err != nil {
+		return nil, err
+	}
 	return &betaCalculator{cache: cache}, nil
 }
 
@@ -78,7 +83,7 @@ func (calculator *betaCalculator) Execute(command Command) error {
 	// Calculate beta on assets
 	betaResults := make(chan betaReport, len(assetNames))
 	for _, asset := range assets {
-		go calcBeta(asset, index, command.HistoryDepth, betaResults, errors)
+		go calcBeta(asset, index, command.HistoryDepth, calculator.cache, betaResults, errors)
 	}
 	// Read the results of calculation or stop on first error
 	var betas []betaReport
@@ -119,7 +124,7 @@ func getAsset(assetName string, result chan moex.Asset, errResult chan error) {
 	}
 }
 
-func calcBeta(asset moex.Asset, index moex.Asset, depthMonth int, result chan betaReport, errResult chan error) {
+func calcBeta(asset moex.Asset, index moex.Asset, depthMonth int, cache *Cache, result chan betaReport, errResult chan error) {
 	// Adjust range on availability of data on MOEX
 	historyTo := time.Now()
 	historyFrom := historyTo.AddDate(0, -depthMonth, 0)
@@ -162,6 +167,9 @@ func calcBeta(asset moex.Asset, index moex.Asset, depthMonth int, result chan be
 		slog.Debug("seems that MOEX reports same open and close prices for the index, recalculating profits...")
 		indexProfits = getOvernightProfits(indexHistory)
 	}
+
+	saveProfits(cache, asset.Secid, assetHistory, assetProfits)
+	saveProfits(cache, index.Secid, indexHistory, indexProfits)
 
 	indexStdDev := stat.StdDev(indexProfits, nil)
 	beta := stat.Covariance(indexProfits, assetProfits, nil) / (indexStdDev * indexStdDev)
@@ -238,4 +246,12 @@ func profitsCalculatedWrong(profits []float64) bool {
 	}
 
 	return sum == 0
+}
+
+func saveProfits(cache *Cache, asset string, history []moex.HistoryItem, profits []float64) {
+	var dates []string
+	for _, item := range history {
+		dates = append(dates, item.Tradedate)
+	}
+	cache.AddProfits(asset, dates, profits)
 }
