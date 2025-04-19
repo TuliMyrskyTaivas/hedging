@@ -1,10 +1,12 @@
 module github.com/TuliMyrskyTaivas/hedging
 
-go 1.22.5
+go 1.23.0
+
+toolchain go1.23.4
 
 require (
 	github.com/mattn/go-sqlite3 v1.14.24
-	golang.org/x/text v0.21.0
+	golang.org/x/text v0.23.0
 	gonum.org/v1/gonum v0.15.1
 )
 
