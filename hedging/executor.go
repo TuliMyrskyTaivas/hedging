@@ -6,6 +6,7 @@ type Command struct {
 	Asset        string
 	Hedge        string
 	HistoryDepth int
+	Report       string
 }
 
 type Executor interface {

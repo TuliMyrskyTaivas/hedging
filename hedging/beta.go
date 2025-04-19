@@ -27,6 +27,7 @@ func newBetaCalculator() (Executor, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return &betaCalculator{cache: cache}, nil
 }
 
@@ -48,6 +49,17 @@ func (calculator *betaCalculator) Execute(command Command) error {
 
 	if len(command.Asset) == 0 {
 		return fmt.Errorf("asset was not specified. Run with -h for the help")
+	}
+
+	// Create report file if requested
+	var report *Report = nil
+	if len(command.Report) > 0 {
+		var err error
+		report, err = NewReport(command.Report)
+		if err != nil {
+			return fmt.Errorf("failed to create report file: %s", err)
+		}
+		defer report.Close()
 	}
 
 	// Prepare channels
@@ -106,6 +118,12 @@ func (calculator *betaCalculator) Execute(command Command) error {
 		return err
 	}
 	for _, beta := range betas {
+		if report != nil {
+			err = report.AddReport(beta.asset, index.Secid, beta.beta, time.Now().Format("2006-01-02 15:04:05"))
+			if err != nil {
+				return fmt.Errorf("failed to add line to report: %s", err)
+			}
+		}
 		printer.Printf("Beta coefficient for last %d month %s on %s is %f\n", command.HistoryDepth, beta.asset, index.Secid, beta.beta)
 	}
 

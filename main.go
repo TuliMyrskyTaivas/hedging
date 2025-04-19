@@ -42,6 +42,7 @@ func main() {
 
 	flag.StringVar(&command.Asset, "a", "", "base asset")
 	flag.StringVar(&command.Hedge, "i", "", "hedge/index asset")
+	flag.StringVar(&command.Report, "r", "", "report file")
 	flag.IntVar(&command.HistoryDepth, "d", 12, "history request depth")
 	flag.BoolVar(&verbose, "v", false, "verbose logging")
 	flag.BoolVar(&help, "h", false, "show help")
