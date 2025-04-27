@@ -13,12 +13,12 @@ type Executor interface {
 	Execute(command Command) error
 }
 
-func CreateCommand(command string) (Executor, error) {
-	if command == "beta" {
+func CreateCommand(commandName string) (Executor, error) {
+	if commandName == "beta" {
 		return newBetaCalculator()
 	}
-	if command == "hedge" {
+	if commandName == "hedge" {
 		return newHedgeCalculator()
 	}
-	return nil, fmt.Errorf("wrong command %s, run with -h for the help", command)
+	return nil, fmt.Errorf("wrong command %s, run with -h for the help", commandName)
 }

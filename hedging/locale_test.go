@@ -11,7 +11,7 @@ func TestGetLocale(t *testing.T) {
 		t.Fatalf("getLocale failed: %s", err)
 	}
 
-	expected := regexp.MustCompile("[a-z]{2}-[A-Z]{2}")
+	expected := regexp.MustCompile("[a-z]{2}[-_]{1}[A-Z]{2}")
 	if !expected.MatchString(locale) {
 		t.Fatalf("locale format mismatch: %s", locale)
 	}

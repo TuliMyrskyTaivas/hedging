@@ -13,7 +13,8 @@ type hedgeCalculator struct {
 }
 
 func newHedgeCalculator() (Executor, error) {
-	cache, err := NewCache()
+	const cacheFile = "cache.db"
+	cache, err := NewCache(cacheFile)
 	if err != nil {
 		return nil, err
 	}

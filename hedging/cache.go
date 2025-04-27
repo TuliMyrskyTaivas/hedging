@@ -14,8 +14,10 @@ type Cache struct {
 	db *sql.DB
 }
 
-func NewCache() (*Cache, error) {
-	const filename string = "cache.db"
+func NewCache(filename string) (*Cache, error) {
+	if filename == "" {
+		filename = "cache.db"
+	}
 	db, err := sql.Open("sqlite3", filename)
 	if err != nil {
 		return nil, err
@@ -39,13 +41,24 @@ func NewCache() (*Cache, error) {
 func (cache *Cache) GetAvailableRange(asset string) (time.Time, time.Time, error) {
 	result := cache.db.QueryRow("SELECT min(date), max(date) FROM profits WHERE ticker=?", asset)
 
-	var from, till time.Time
-	err := result.Scan(from, till)
+	var from, till string
+	err := result.Scan(&from, &till)
 	if err != nil {
 		return time.Time{}, time.Time{}, err
 	}
 
-	return from, till, nil
+	const TimeFormat = "2006-01-02"
+	fromTime, err := time.Parse(TimeFormat, from)
+	if err != nil {
+		return time.Time{}, time.Time{}, err
+	}
+
+	tillTime, err := time.Parse(TimeFormat, till)
+	if err != nil {
+		return time.Time{}, time.Time{}, err
+	}
+
+	return fromTime, tillTime, nil
 }
 
 func (cache *Cache) PrintStats() error {
